@@ -416,14 +416,14 @@ int main(int argc, char **argv) {
 
         if (json_output) {
             print_json_device(stdout, info, printed == 0, watch_only);
+            printed++;
         } else {
             if (!watch_only || info->is_watch) {
                 print_human_device(info);
             }
-        }
-
-        if (info->has_battery || !watch_only) {
-            printed++;
+            if (info->has_battery || !watch_only) {
+                printed++;
+            }
         }
 
         free_watch_info(info);
