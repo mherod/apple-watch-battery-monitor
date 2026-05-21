@@ -1,0 +1,5 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Large bundled runtime libraries should be stored with Git LFS.
+lib/*.dylib filter=lfs diff=lfs merge=lfs -text
