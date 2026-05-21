@@ -33,6 +33,7 @@ This repository is a small C utility project focused on Apple Watch battery disc
   - build succeeds.
   - command returns watch battery when iPhone/watch are paired.
   - `--json` output parses as valid JSON and includes expected `udid`, `battery` and `isWatch` fields.
+  - `--watch-udid <UDID>` returns only the matching paired Watch, or an empty `devices` array if the UDID is not paired.
 
 ## Commit & Pull Request Guidelines
 - Keep commits focused and descriptive, e.g. `feat: add --watch-only json output`.

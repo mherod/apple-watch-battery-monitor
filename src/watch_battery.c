@@ -56,10 +56,11 @@ static const char *companion_proxy_error_name(companion_proxy_error_t err) {
 }
 
 static void print_usage(const char *prog) {
-    fprintf(stderr, "Usage: %s [--json] [--watch-only] [iPhone UDID]\n", prog);
-    fprintf(stderr, "  --json, -j       Output JSON only\n");
-    fprintf(stderr, "  --watch-only, -w Only include Apple Watch entries\n");
-    fprintf(stderr, "  --help           Show this message\n");
+    fprintf(stderr, "Usage: %s [--json] [--watch-only] [--watch-udid <UDID>] [iPhone UDID]\n", prog);
+    fprintf(stderr, "  --json, -j           Output JSON only\n");
+    fprintf(stderr, "  --watch-only, -w     Only include Apple Watch entries\n");
+    fprintf(stderr, "  --watch-udid <UDID>  Only include the Watch with this UDID\n");
+    fprintf(stderr, "  --help               Show this message\n");
 }
 
 static int start_proxy(idevice_t device, companion_proxy_client_t *proxy) {
@@ -279,6 +280,7 @@ static void print_human_device(const watch_device_info_t *info) {
 
 int main(int argc, char **argv) {
     const char *iphone_udid = NULL;
+    const char *target_watch_udid = NULL;
     int json_output = 0;
     int watch_only = 0;
 
@@ -286,6 +288,14 @@ int main(int argc, char **argv) {
         if (strcmp(argv[i], "--json") == 0 || strcmp(argv[i], "-j") == 0) {
             json_output = 1;
         } else if (strcmp(argv[i], "--watch-only") == 0 || strcmp(argv[i], "-w") == 0) {
+            watch_only = 1;
+        } else if (strcmp(argv[i], "--watch-udid") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "--watch-udid requires a UDID argument\n");
+                print_usage(argv[0]);
+                return 2;
+            }
+            target_watch_udid = argv[++i];
             watch_only = 1;
         } else if (strcmp(argv[i], "--help") == 0) {
             print_usage(argv[0]);
@@ -399,6 +409,11 @@ int main(int argc, char **argv) {
         char *watch_udid = NULL;
         plist_get_string_val(item, &watch_udid);
         if (!watch_udid) {
+            continue;
+        }
+
+        if (target_watch_udid && strcasecmp(watch_udid, target_watch_udid) != 0) {
+            plist_mem_free(watch_udid);
             continue;
         }
 
