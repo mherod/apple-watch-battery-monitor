@@ -108,6 +108,54 @@ if [[ -z "$iphone_udid" ]]; then
     exit 1
 fi
 
+xml_escape() {
+    local s="$1"
+    s="${s//&/&amp;}"
+    s="${s//</&lt;}"
+    s="${s//>/&gt;}"
+    s="${s//\"/&quot;}"
+    s="${s//\'/&apos;}"
+    printf '%s' "$s"
+}
+
+require_integer() {
+    local name="$1" value="$2"
+    if ! [[ "$value" =~ ^[0-9]+$ ]]; then
+        echo "$name must be a non-negative integer (got: $value)" >&2
+        exit 1
+    fi
+}
+
+require_label() {
+    local value="$1"
+    if ! [[ "$value" =~ ^[A-Za-z0-9._-]+$ ]]; then
+        echo "--label must match [A-Za-z0-9._-]+ (got: $value)" >&2
+        exit 1
+    fi
+}
+
+require_udid() {
+    local value="$1"
+    if ! [[ "$value" =~ ^[A-Za-z0-9-]+$ ]]; then
+        echo "--iphone UDID must match [A-Za-z0-9-]+ (got: $value)" >&2
+        exit 1
+    fi
+}
+
+require_label "$LABEL"
+require_udid "$iphone_udid"
+require_integer "--interval" "$INTERVAL"
+require_integer "--low-threshold" "$LOW_THRESHOLD"
+require_integer "--fast-drop-rate" "$FAST_DROP_RATE"
+require_integer "--low-cooldown-minutes" "$LOW_BATTERY_COOLDOWN"
+require_integer "--fast-cooldown-minutes" "$FAST_DROP_COOLDOWN"
+
+LABEL_X="$(xml_escape "$LABEL")"
+IPHONE_UDID_X="$(xml_escape "$iphone_udid")"
+STATE_DIR_X="$(xml_escape "$STATE_DIR")"
+MONITOR_SCRIPT_X="$(xml_escape "$MONITOR_SCRIPT")"
+LAUNCHD_PATH_X="$(xml_escape "$LAUNCHD_PATH")"
+
 mkdir -p "$STATE_DIR"
 mkdir -p "$HOME/Library/LaunchAgents"
 PLIST_PATH="$HOME/Library/LaunchAgents/$LABEL.plist"
@@ -118,25 +166,25 @@ cat > "$PLIST_PATH" <<EOF_PLIST
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>$LABEL</string>
+    <string>$LABEL_X</string>
     <key>RunAtLoad</key>
     <true/>
     <key>StartInterval</key>
     <integer>$INTERVAL</integer>
     <key>StandardOutPath</key>
-    <string>$STATE_DIR/monitor.log</string>
+    <string>$STATE_DIR_X/monitor.log</string>
     <key>StandardErrorPath</key>
-    <string>$STATE_DIR/monitor.err</string>
+    <string>$STATE_DIR_X/monitor.err</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$MONITOR_SCRIPT</string>
+        <string>$MONITOR_SCRIPT_X</string>
         <string>--iphone</string>
-        <string>$iphone_udid</string>
+        <string>$IPHONE_UDID_X</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>$LAUNCHD_PATH</string>
+        <string>$LAUNCHD_PATH_X</string>
         <key>WATCH_BATTERY_LOW_THRESHOLD</key>
         <string>$LOW_THRESHOLD</string>
         <key>WATCH_BATTERY_FAST_DROP_RATE_PER_HOUR</key>
@@ -146,9 +194,9 @@ cat > "$PLIST_PATH" <<EOF_PLIST
         <key>WATCH_BATTERY_FAST_DROP_COOLDOWN_MINUTES</key>
         <string>$FAST_DROP_COOLDOWN</string>
         <key>WATCH_BATTERY_STATE_DIR</key>
-        <string>$STATE_DIR</string>
+        <string>$STATE_DIR_X</string>
         <key>WATCH_BATTERY_STATE_FILE</key>
-        <string>$STATE_DIR/state.json</string>
+        <string>$STATE_DIR_X/state.json</string>
     </dict>
 </dict>
 </plist>
