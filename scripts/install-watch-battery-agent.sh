@@ -12,6 +12,7 @@ FAST_DROP_RATE="${WATCH_BATTERY_FAST_DROP_RATE_PER_HOUR:-12}"
 LOW_BATTERY_COOLDOWN="${WATCH_BATTERY_LOW_COOLDOWN_MINUTES:-30}"
 FAST_DROP_COOLDOWN="${WATCH_BATTERY_FAST_DROP_COOLDOWN_MINUTES:-30}"
 LAUNCHD_PATH="${WATCH_BATTERY_LAUNCHD_PATH:-/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
+WATCH_UDID="${WATCH_BATTERY_WATCH_UDID:-}"
 
 usage() {
     cat <<'USAGE'
@@ -19,6 +20,7 @@ Usage: install-watch-battery-agent.sh --iphone <udid> [options]
 
 Options:
   --iphone <udid>                    iPhone UDID that owns the Watch
+  --watch-udid <udid>                 Pin to a specific Watch UDID (default: first Watch)
   --label <label>                     LaunchAgent label (default: com.bluetoothembedded.watch-battery-monitor)
   --interval <seconds>                Poll interval (default: 600)
   --low-threshold <0-100>             Low battery threshold (default: 20)
@@ -56,6 +58,10 @@ while [[ $# -gt 0 ]]; do
         --iphone)
             shift
             iphone_udid="$1"
+            ;;
+        --watch-udid)
+            shift
+            WATCH_UDID="$1"
             ;;
         --label)
             shift
@@ -135,15 +141,18 @@ require_label() {
 }
 
 require_udid() {
-    local value="$1"
+    local name="$1" value="$2"
     if ! [[ "$value" =~ ^[A-Za-z0-9-]+$ ]]; then
-        echo "--iphone UDID must match [A-Za-z0-9-]+ (got: $value)" >&2
+        echo "$name UDID must match [A-Za-z0-9-]+ (got: $value)" >&2
         exit 1
     fi
 }
 
 require_label "$LABEL"
-require_udid "$iphone_udid"
+require_udid "--iphone" "$iphone_udid"
+if [[ -n "$WATCH_UDID" ]]; then
+    require_udid "--watch-udid" "$WATCH_UDID"
+fi
 require_integer "--interval" "$INTERVAL"
 require_integer "--low-threshold" "$LOW_THRESHOLD"
 require_integer "--fast-drop-rate" "$FAST_DROP_RATE"
@@ -152,6 +161,7 @@ require_integer "--fast-cooldown-minutes" "$FAST_DROP_COOLDOWN"
 
 LABEL_X="$(xml_escape "$LABEL")"
 IPHONE_UDID_X="$(xml_escape "$iphone_udid")"
+WATCH_UDID_X="$(xml_escape "$WATCH_UDID")"
 STATE_DIR_X="$(xml_escape "$STATE_DIR")"
 MONITOR_SCRIPT_X="$(xml_escape "$MONITOR_SCRIPT")"
 LAUNCHD_PATH_X="$(xml_escape "$LAUNCHD_PATH")"
@@ -197,6 +207,8 @@ cat > "$PLIST_PATH" <<EOF_PLIST
         <string>$STATE_DIR_X</string>
         <key>WATCH_BATTERY_STATE_FILE</key>
         <string>$STATE_DIR_X/state.json</string>
+        <key>WATCH_BATTERY_WATCH_UDID</key>
+        <string>$WATCH_UDID_X</string>
     </dict>
 </dict>
 </plist>

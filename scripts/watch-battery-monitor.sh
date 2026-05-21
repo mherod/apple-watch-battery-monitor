@@ -12,6 +12,7 @@ FAST_DROP_RATE="${WATCH_BATTERY_FAST_DROP_RATE_PER_HOUR:-12}" # percent/hour
 FAST_DROP_COOLDOWN_MINUTES="${WATCH_BATTERY_FAST_DROP_COOLDOWN_MINUTES:-30}"
 LOW_BATTERY_COOLDOWN_MINUTES="${WATCH_BATTERY_LOW_COOLDOWN_MINUTES:-30}"
 MIN_SAMPLE_SECONDS="${WATCH_BATTERY_MIN_SAMPLE_SECONDS:-300}"
+WATCH_UDID="${WATCH_BATTERY_WATCH_UDID:-}"
 
 usage() {
     cat <<'USAGE'
@@ -23,6 +24,7 @@ Options:
   --fast-drop-rate <percent/hour>      Alert if drain exceeds this rate (default: 12)
   --fast-cooldown-minutes <minutes>    Cooldown for fast-drain alerts (default: 30)
   --low-cooldown-minutes <minutes>     Cooldown for low-battery alerts (default: 30)
+  --watch-udid <udid>                  Pin to a specific Watch UDID (default: first Watch)
   --state-file <path>                  Override state file path
   --help                               Show this message
 USAGE
@@ -93,6 +95,10 @@ while [[ $# -gt 0 ]]; do
             shift
             LOW_BATTERY_COOLDOWN_MINUTES="${1:-$LOW_BATTERY_COOLDOWN_MINUTES}"
             ;;
+        --watch-udid)
+            shift
+            WATCH_UDID="${1:-}"
+            ;;
         --state-file)
             shift
             STATE_FILE="${1:-$STATE_FILE}"
@@ -136,7 +142,13 @@ fi
 
 now_ts=$(date +%s)
 
-if ! json_output="$("$WATCH_BATTERY_BIN" --watch-only --json "$iPhone_udid")"; then
+watch_battery_args=(--watch-only --json)
+if [[ -n "$WATCH_UDID" ]]; then
+    watch_battery_args+=(--watch-udid "$WATCH_UDID")
+fi
+watch_battery_args+=("$iPhone_udid")
+
+if ! json_output="$("$WATCH_BATTERY_BIN" "${watch_battery_args[@]}")"; then
     echo "watch_battery failed for iPhone $iPhone_udid" >&2
     exit 1
 fi

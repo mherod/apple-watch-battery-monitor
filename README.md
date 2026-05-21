@@ -60,6 +60,14 @@ You should see a device list.
 
 To get UDID automatically from the connected phone, you can run `./bin/watch_battery --watch-only --json` and inspect output.
 
+5. Pin to a specific Watch (multi-Watch setups):
+
+```bash
+./bin/watch_battery --watch-udid <WATCH_UDID> --json <IPHONE_UDID>
+```
+
+`--watch-udid` is case-insensitive and implies `--watch-only`. If the UDID is not paired, the JSON response is `{"devices":[]}` rather than an error.
+
 ## Install automatic monitor
 
 The monitor runs every 10 minutes by default and sends macOS notifications.
@@ -81,12 +89,15 @@ You can set these values at install time:
 ```bash
 make monitor-install \
   IPHONE_UDID=<IPHONE_UDID> \
+  WATCH_BATTERY_WATCH_UDID=<WATCH_UDID> \
   WATCH_BATTERY_AGENT_INTERVAL_SECONDS=300 \
   WATCH_BATTERY_LOW_THRESHOLD=15 \
   WATCH_BATTERY_FAST_DROP_RATE_PER_HOUR=10 \
   WATCH_BATTERY_LOW_COOLDOWN_MINUTES=20 \
   WATCH_BATTERY_FAST_DROP_COOLDOWN_MINUTES=45
 ```
+
+`WATCH_BATTERY_WATCH_UDID` is optional; omit it to monitor the first Watch reported by the iPhone.
 
 Meaning:
 
